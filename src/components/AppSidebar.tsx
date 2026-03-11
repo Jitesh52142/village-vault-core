@@ -4,7 +4,7 @@ import { getPermissions } from '@/lib/permissions';
 import { ROLE_LABELS } from '@/types';
 import {
   LayoutDashboard, Users, CreditCard, Receipt, MapPin, FileText, ShieldAlert,
-  ClipboardList, Download, Database, LogOut, ChevronLeft, ChevronRight, Settings
+  ClipboardList, Download, Database, LogOut, ChevronLeft, ChevronRight, Settings, Upload
 } from 'lucide-react';
 import { useState } from 'react';
 import { NavLink } from '@/components/NavLink';
@@ -26,6 +26,7 @@ const allNavItems: NavItem[] = [
   { title: 'Risk Flags', url: '/risk-flags', icon: ShieldAlert, permissionKey: 'canViewRiskFlags' },
   { title: 'Audit Log', url: '/audit', icon: ClipboardList, permissionKey: 'canViewAudit' },
   { title: 'Exports', url: '/exports', icon: Download, permissionKey: 'canExport' },
+  { title: 'Bulk Import', url: '/bulk-import', icon: Upload, permissionKey: 'canBulkImport' },
   { title: 'Backup', url: '/backup', icon: Database, permissionKey: 'canTriggerBackup' },
   { title: 'Settings', url: '/settings', icon: Settings, permissionKey: 'canManageRoles' },
 ];
@@ -45,7 +46,7 @@ export function AppSidebar() {
     return permissions[item.permissionKey];
   });
 
-  // Treasurer sees simplified nav
+  // Treasurer sees ultra-simplified nav
   const treasurerItems: NavItem[] = [
     { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
     { title: 'Collect Payment', url: '/repayments', icon: Receipt },
