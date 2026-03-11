@@ -3,39 +3,76 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { mockMembers, mockVSLAs } from '@/data/mockData';
+import { validateLoanCreation } from '@/lib/validators';
+import { LOAN_MAX_DURATION_MONTHS } from '@/types';
 import { useState } from 'react';
-import { ArrowLeft, CreditCard } from 'lucide-react';
+import { ArrowLeft, CreditCard, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { getPermissions } from '@/lib/permissions';
 
 export default function CreateLoanPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [vslaId, setVslaId] = useState('');
   const [memberId, setMemberId] = useState('');
   const [principal, setPrincipal] = useState('');
   const [interestRate, setInterestRate] = useState('10');
   const [duration, setDuration] = useState('6');
   const [frequency, setFrequency] = useState('monthly');
+  const [errors, setErrors] = useState<string[]>([]);
 
-  const availableMembers = mockMembers.filter(m => m.vslaId === vslaId && !m.hasActiveLoan);
+  if (!user) return null;
+  const perms = getPermissions(user.role);
+
+  if (!perms.canCreateLoan) {
+    return (
+      <div className="text-center py-20">
+        <AlertTriangle className="h-12 w-12 mx-auto text-destructive mb-4" />
+        <h2 className="text-xl font-bold text-foreground">Access Restricted</h2>
+        <p className="text-muted-foreground mt-2">Your role does not allow creating loans.</p>
+      </div>
+    );
+  }
+
+  // Filter VSLAs based on user role and assignments
+  const availableVSLAs = (user.role === 'super_admin' || user.role === 'admin')
+    ? mockVSLAs
+    : mockVSLAs.filter(v => user.assignedVslaIds.includes(v.id));
+
+  const availableMembers = mockMembers.filter(m => m.vslaId === vslaId);
+  const eligibleMembers = availableMembers.filter(m => !m.hasActiveLoan);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!vslaId || !memberId || !principal) {
-      toast.error('Please fill all required fields');
+    setErrors([]);
+
+    const validation = validateLoanCreation({
+      vslaId,
+      memberId,
+      principal: parseFloat(principal) || 0,
+      interestRate: parseFloat(interestRate) || 0,
+      durationMonths: parseInt(duration) || 0,
+      frequency,
+    });
+
+    if (!validation.valid) {
+      setErrors(validation.errors);
+      validation.errors.forEach(err => toast.error(err));
       return;
     }
-    const member = mockMembers.find(m => m.id === memberId);
-    if (member?.hasActiveLoan) {
-      toast.error('This member already has an active loan');
-      return;
-    }
-    toast.success('Loan created successfully! Status: NEW');
+
+    toast.success('Loan created successfully! Status: NEW (will activate after 7 days)');
     navigate('/loans');
   };
 
   const principalNum = parseFloat(principal) || 0;
   const rateNum = parseFloat(interestRate) || 0;
-  const totalDue = principalNum + (principalNum * rateNum / 100);
+  const interestAmount = principalNum * rateNum / 100;
+  const totalDue = principalNum + interestAmount;
+  const durationNum = parseInt(duration) || 1;
+  const installments = frequency === 'weekly' ? durationNum * 4 : durationNum;
+  const installmentAmount = installments > 0 ? totalDue / installments : 0;
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -49,36 +86,51 @@ export default function CreateLoanPage() {
         </div>
       </div>
 
+      {/* Validation Errors */}
+      {errors.length > 0 && (
+        <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-4 space-y-1">
+          {errors.map((err, i) => (
+            <p key={i} className="text-sm text-destructive flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+              {err}
+            </p>
+          ))}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="bg-card rounded-xl border border-border p-6 shadow-sm space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
             <label className="text-sm font-medium text-foreground mb-1.5 block">VSLA *</label>
-            <Select value={vslaId} onValueChange={v => { setVslaId(v); setMemberId(''); }}>
+            <Select value={vslaId} onValueChange={v => { setVslaId(v); setMemberId(''); setErrors([]); }}>
               <SelectTrigger><SelectValue placeholder="Select VSLA" /></SelectTrigger>
               <SelectContent>
-                {mockVSLAs.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
+                {availableVSLAs.map(v => <SelectItem key={v.id} value={v.id}>{v.name} ({v.friendlyId})</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div>
             <label className="text-sm font-medium text-foreground mb-1.5 block">Member *</label>
-            <Select value={memberId} onValueChange={setMemberId} disabled={!vslaId}>
+            <Select value={memberId} onValueChange={v => { setMemberId(v); setErrors([]); }} disabled={!vslaId}>
               <SelectTrigger><SelectValue placeholder="Select member" /></SelectTrigger>
               <SelectContent>
-                {availableMembers.length > 0 ? availableMembers.map(m => (
-                  <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                {eligibleMembers.length > 0 ? eligibleMembers.map(m => (
+                  <SelectItem key={m.id} value={m.id}>{m.name} ({m.friendlyId})</SelectItem>
                 )) : (
-                  <SelectItem value="none" disabled>No eligible members</SelectItem>
+                  <SelectItem value="none" disabled>No eligible members (all have active loans)</SelectItem>
                 )}
               </SelectContent>
             </Select>
+            {vslaId && availableMembers.length > 0 && eligibleMembers.length === 0 && (
+              <p className="text-xs text-warning mt-1">⚠ All members in this VSLA have active loans</p>
+            )}
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
             <label className="text-sm font-medium text-foreground mb-1.5 block">Principal Amount *</label>
-            <Input type="number" placeholder="e.g. 150000" value={principal} onChange={e => setPrincipal(e.target.value)} min="0" />
+            <Input type="number" placeholder="e.g. 150000" value={principal} onChange={e => setPrincipal(e.target.value)} min="1" />
           </div>
           <div>
             <label className="text-sm font-medium text-foreground mb-1.5 block">Interest Rate (%)</label>
@@ -88,11 +140,11 @@ export default function CreateLoanPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">Duration (months)</label>
+            <label className="text-sm font-medium text-foreground mb-1.5 block">Duration (max {LOAN_MAX_DURATION_MONTHS} months)</label>
             <Select value={duration} onValueChange={setDuration}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                {Array.from({ length: LOAN_MAX_DURATION_MONTHS }, (_, i) => i + 1).map(m => (
                   <SelectItem key={m} value={String(m)}>{m} month{m > 1 ? 's' : ''}</SelectItem>
                 ))}
               </SelectContent>
@@ -110,7 +162,7 @@ export default function CreateLoanPage() {
           </div>
         </div>
 
-        {/* Summary */}
+        {/* Loan Summary */}
         {principalNum > 0 && (
           <div className="bg-muted/50 rounded-lg p-4 space-y-2">
             <h3 className="text-sm font-semibold text-foreground">Loan Summary</h3>
@@ -118,9 +170,13 @@ export default function CreateLoanPage() {
               <p className="text-muted-foreground">Principal:</p>
               <p className="font-medium text-foreground">{principalNum.toLocaleString()}</p>
               <p className="text-muted-foreground">Interest ({rateNum}%):</p>
-              <p className="font-medium text-foreground">{(principalNum * rateNum / 100).toLocaleString()}</p>
+              <p className="font-medium text-foreground">{interestAmount.toLocaleString()}</p>
               <p className="text-muted-foreground">Total Due:</p>
               <p className="font-bold text-foreground">{totalDue.toLocaleString()}</p>
+              <p className="text-muted-foreground">Installments:</p>
+              <p className="font-medium text-foreground">{installments} × {Math.round(installmentAmount).toLocaleString()}</p>
+              <p className="text-muted-foreground">Initial Status:</p>
+              <p className="font-medium text-foreground">NEW (7-day grace period)</p>
             </div>
           </div>
         )}

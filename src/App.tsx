@@ -20,6 +20,8 @@ import MapPage from "@/pages/MapPage";
 import ExportsPage from "@/pages/ExportsPage";
 import BackupPage from "@/pages/BackupPage";
 import SettingsPage from "@/pages/SettingsPage";
+import BulkImportPage from "@/pages/BulkImportPage";
+import UnauthorizedPage from "@/pages/UnauthorizedPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +35,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/unauthorized" element={<UnauthorizedPage />} />
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<DashboardPage />} />
@@ -47,6 +50,7 @@ const App = () => (
               <Route path="/map" element={<MapPage />} />
               <Route path="/exports" element={<ExportsPage />} />
               <Route path="/backup" element={<BackupPage />} />
+              <Route path="/bulk-import" element={<BulkImportPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
