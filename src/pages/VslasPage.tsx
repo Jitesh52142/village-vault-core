@@ -9,9 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Pencil, Trash2, Search, Building2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Building2, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { VSLA } from '@/types';
+import type { VSLA, Country, Province, Community } from '@/types';
 
 interface VslaFormData {
   name: string;
@@ -31,6 +31,10 @@ export default function VslasPage() {
   const canManage = permissions?.canManageVslas ?? false;
 
   const [vslas, setVslas] = useState<VSLA[]>(mockVSLAs);
+  const [countries, setCountries] = useState<Country[]>(mockCountries);
+  const [provinces, setProvinces] = useState<Province[]>(mockProvinces);
+  const [communities, setCommunities] = useState<Community[]>(mockCommunities);
+
   const [search, setSearch] = useState('');
   const [countryFilter, setCountryFilter] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -40,31 +44,80 @@ export default function VslasPage() {
   const [form, setForm] = useState<VslaFormData>(emptyForm);
   const [errors, setErrors] = useState<string[]>([]);
 
+  // Inline "Add New" states
+  const [addingCountry, setAddingCountry] = useState(false);
+  const [newCountryName, setNewCountryName] = useState('');
+  const [newCurrencySymbol, setNewCurrencySymbol] = useState('');
+  const [newCurrencyCode, setNewCurrencyCode] = useState('');
+
+  const [addingProvince, setAddingProvince] = useState(false);
+  const [newProvinceName, setNewProvinceName] = useState('');
+
+  const [addingCommunity, setAddingCommunity] = useState(false);
+  const [newCommunityName, setNewCommunityName] = useState('');
+
   // Derived lookups
-  const getCommunity = (id: string) => mockCommunities.find(c => c.id === id);
-  const getProvince = (id: string) => mockProvinces.find(p => p.id === id);
-  const getCountryForCommunity = (communityId: string) => {
-    const community = getCommunity(communityId);
-    if (!community) return null;
-    const province = getProvince(community.provinceId);
-    if (!province) return null;
-    return mockCountries.find(c => c.id === province.countryId);
-  };
+  const getCommunity = (id: string) => communities.find(c => c.id === id);
+  const getProvince = (id: string) => provinces.find(p => p.id === id);
 
   // Filter VSLAs
   const filtered = vslas.filter(v => {
     const matchesSearch = v.name.toLowerCase().includes(search.toLowerCase()) || v.friendlyId.toLowerCase().includes(search.toLowerCase());
-    const matchesCountry = countryFilter === 'all' || v.countryName === mockCountries.find(c => c.id === countryFilter)?.name;
+    const matchesCountry = countryFilter === 'all' || v.countryName === countries.find(c => c.id === countryFilter)?.name;
     return matchesSearch && matchesCountry;
   });
 
-  // Get provinces filtered by selected country in form
-  const getProvincesForForm = () => {
-    const community = getCommunity(form.communityId);
-    return mockProvinces;
+  // Inline add handlers
+  const handleAddCountry = () => {
+    if (!newCountryName.trim() || !newCurrencySymbol.trim() || !newCurrencyCode.trim()) {
+      toast({ title: 'Missing fields', description: 'Country name, currency symbol, and currency code are all required.', variant: 'destructive' });
+      return;
+    }
+    const id = `c${Date.now()}`;
+    const newCountry: Country = {
+      id,
+      name: newCountryName.trim(),
+      currency: newCurrencyCode.trim().toUpperCase(),
+      currencySymbol: newCurrencySymbol.trim(),
+      currencyCode: newCurrencyCode.trim().toUpperCase(),
+      currencyDecimalPlaces: 0,
+    };
+    setCountries(prev => [...prev, newCountry]);
+    setForm(f => ({ ...f, countryId: id, provinceId: '', communityId: '' }));
+    setNewCountryName('');
+    setNewCurrencySymbol('');
+    setNewCurrencyCode('');
+    setAddingCountry(false);
+    toast({ title: 'Country Added', description: `${newCountry.name} has been added.` });
   };
 
-  const getCommunitiesForFilter = () => mockCommunities;
+  const handleAddProvince = () => {
+    if (!newProvinceName.trim()) {
+      toast({ title: 'Missing name', description: 'Province name is required.', variant: 'destructive' });
+      return;
+    }
+    const id = `p${Date.now()}`;
+    const newProv: Province = { id, name: newProvinceName.trim(), countryId: form.countryId };
+    setProvinces(prev => [...prev, newProv]);
+    setForm(f => ({ ...f, provinceId: id, communityId: '' }));
+    setNewProvinceName('');
+    setAddingProvince(false);
+    toast({ title: 'Province Added', description: `${newProv.name} has been added.` });
+  };
+
+  const handleAddCommunity = () => {
+    if (!newCommunityName.trim()) {
+      toast({ title: 'Missing name', description: 'Community name is required.', variant: 'destructive' });
+      return;
+    }
+    const id = `cm${Date.now()}`;
+    const newCom: Community = { id, name: newCommunityName.trim(), provinceId: form.provinceId };
+    setCommunities(prev => [...prev, newCom]);
+    setForm(f => ({ ...f, communityId: id }));
+    setNewCommunityName('');
+    setAddingCommunity(false);
+    toast({ title: 'Community Added', description: `${newCom.name} has been added.` });
+  };
 
   const validate = (): string[] => {
     const errs: string[] = [];
