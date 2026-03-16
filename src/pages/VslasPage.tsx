@@ -253,7 +253,7 @@ export default function VslasPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Countries</SelectItem>
-            {mockCountries.map(c => (
+            {countries.map(c => (
               <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
             ))}
           </SelectContent>
