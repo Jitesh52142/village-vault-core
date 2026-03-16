@@ -287,7 +287,7 @@ export default function VslasPage() {
               </TableRow>
             ) : (
               filtered.map(v => {
-                const country = mockCountries.find(c => c.name === v.countryName);
+                const country = countries.find(c => c.name === v.countryName);
                 const symbol = country?.currencySymbol ?? '$';
                 return (
                   <TableRow key={v.id} className="hover:bg-muted/30 transition-colors">
