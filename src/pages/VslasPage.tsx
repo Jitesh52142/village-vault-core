@@ -15,12 +15,14 @@ import type { VSLA } from '@/types';
 
 interface VslaFormData {
   name: string;
+  countryId: string;
+  provinceId: string;
   communityId: string;
   lat: string;
   lng: string;
 }
 
-const emptyForm: VslaFormData = { name: '', communityId: '', lat: '', lng: '' };
+const emptyForm: VslaFormData = { name: '', countryId: '', provinceId: '', communityId: '', lat: '', lng: '' };
 
 export default function VslasPage() {
   const { user } = useAuth();
