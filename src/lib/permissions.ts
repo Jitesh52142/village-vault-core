@@ -28,6 +28,9 @@ export interface Permission {
   canViewReports: boolean;
   canViewRiskFlags: boolean;
 
+  // VSLA Management
+  canManageVslas: boolean;
+
   // System
   canExport: boolean;
   canTriggerBackup: boolean;
