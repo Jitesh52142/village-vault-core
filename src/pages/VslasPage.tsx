@@ -144,7 +144,7 @@ export default function VslasPage() {
     setEditingVsla(vsla);
     const community = getCommunity(vsla.communityId);
     const province = community ? getProvince(community.provinceId) : null;
-    const country = province ? mockCountries.find(c => c.id === province.countryId) : null;
+    const country = province ? countries.find(c => c.id === province.countryId) : null;
     setForm({
       name: vsla.name,
       countryId: country?.id ?? '',
