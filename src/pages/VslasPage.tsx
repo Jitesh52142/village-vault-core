@@ -70,10 +70,11 @@ export default function VslasPage() {
     const errs: string[] = [];
     if (!form.name.trim()) errs.push('VSLA name is required');
     if (form.name.trim().length > 100) errs.push('Name must be less than 100 characters');
+    if (!form.countryId) errs.push('Country is required');
+    if (!form.provinceId) errs.push('Province is required');
     if (!form.communityId) errs.push('Community is required');
     if (form.lat && (isNaN(Number(form.lat)) || Number(form.lat) < -90 || Number(form.lat) > 90)) errs.push('Latitude must be between -90 and 90');
     if (form.lng && (isNaN(Number(form.lng)) || Number(form.lng) < -180 || Number(form.lng) > 180)) errs.push('Longitude must be between -180 and 180');
-    // Check duplicate name in same community (excluding current editing)
     const duplicate = vslas.find(v => v.name.toLowerCase() === form.name.trim().toLowerCase() && v.communityId === form.communityId && v.id !== editingVsla?.id);
     if (duplicate) errs.push('A VSLA with this name already exists in the selected community');
     return errs;
