@@ -15,12 +15,14 @@ import type { VSLA } from '@/types';
 
 interface VslaFormData {
   name: string;
+  countryId: string;
+  provinceId: string;
   communityId: string;
   lat: string;
   lng: string;
 }
 
-const emptyForm: VslaFormData = { name: '', communityId: '', lat: '', lng: '' };
+const emptyForm: VslaFormData = { name: '', countryId: '', provinceId: '', communityId: '', lat: '', lng: '' };
 
 export default function VslasPage() {
   const { user } = useAuth();
@@ -68,10 +70,11 @@ export default function VslasPage() {
     const errs: string[] = [];
     if (!form.name.trim()) errs.push('VSLA name is required');
     if (form.name.trim().length > 100) errs.push('Name must be less than 100 characters');
+    if (!form.countryId) errs.push('Country is required');
+    if (!form.provinceId) errs.push('Province is required');
     if (!form.communityId) errs.push('Community is required');
     if (form.lat && (isNaN(Number(form.lat)) || Number(form.lat) < -90 || Number(form.lat) > 90)) errs.push('Latitude must be between -90 and 90');
     if (form.lng && (isNaN(Number(form.lng)) || Number(form.lng) < -180 || Number(form.lng) > 180)) errs.push('Longitude must be between -180 and 180');
-    // Check duplicate name in same community (excluding current editing)
     const duplicate = vslas.find(v => v.name.toLowerCase() === form.name.trim().toLowerCase() && v.communityId === form.communityId && v.id !== editingVsla?.id);
     if (duplicate) errs.push('A VSLA with this name already exists in the selected community');
     return errs;
@@ -86,8 +89,13 @@ export default function VslasPage() {
 
   const openEdit = (vsla: VSLA) => {
     setEditingVsla(vsla);
+    const community = getCommunity(vsla.communityId);
+    const province = community ? getProvince(community.provinceId) : null;
+    const country = province ? mockCountries.find(c => c.id === province.countryId) : null;
     setForm({
       name: vsla.name,
+      countryId: country?.id ?? '',
+      provinceId: province?.id ?? '',
       communityId: vsla.communityId,
       lat: vsla.lat?.toString() ?? '',
       lng: vsla.lng?.toString() ?? '',
@@ -275,21 +283,41 @@ export default function VslasPage() {
               <Input id="vsla-name" placeholder="e.g. Umoja Women Group" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} maxLength={100} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="vsla-community">Community *</Label>
-              <Select value={form.communityId} onValueChange={v => setForm(f => ({ ...f, communityId: v }))}>
-                <SelectTrigger id="vsla-community">
-                  <SelectValue placeholder="Select community" />
+              <Label htmlFor="vsla-country">Country *</Label>
+              <Select value={form.countryId} onValueChange={v => setForm(f => ({ ...f, countryId: v, provinceId: '', communityId: '' }))}>
+                <SelectTrigger id="vsla-country">
+                  <SelectValue placeholder="Select country" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockCommunities.map(cm => {
-                    const prov = getProvince(cm.provinceId);
-                    const country = prov ? mockCountries.find(c => c.id === prov.countryId) : null;
-                    return (
-                      <SelectItem key={cm.id} value={cm.id}>
-                        {cm.name} — {prov?.name}, {country?.name}
-                      </SelectItem>
-                    );
-                  })}
+                  {mockCountries.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name} ({c.currencySymbol})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="vsla-province">Province *</Label>
+              <Select value={form.provinceId} onValueChange={v => setForm(f => ({ ...f, provinceId: v, communityId: '' }))} disabled={!form.countryId}>
+                <SelectTrigger id="vsla-province">
+                  <SelectValue placeholder={form.countryId ? 'Select province' : 'Select country first'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {mockProvinces.filter(p => p.countryId === form.countryId).map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="vsla-community">Community *</Label>
+              <Select value={form.communityId} onValueChange={v => setForm(f => ({ ...f, communityId: v }))} disabled={!form.provinceId}>
+                <SelectTrigger id="vsla-community">
+                  <SelectValue placeholder={form.provinceId ? 'Select community' : 'Select province first'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {mockCommunities.filter(cm => cm.provinceId === form.provinceId).map(cm => (
+                    <SelectItem key={cm.id} value={cm.id}>{cm.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
