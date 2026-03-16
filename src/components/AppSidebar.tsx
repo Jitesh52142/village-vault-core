@@ -4,7 +4,7 @@ import { getPermissions } from '@/lib/permissions';
 import { ROLE_LABELS } from '@/types';
 import {
   LayoutDashboard, Users, CreditCard, Receipt, MapPin, FileText, ShieldAlert,
-  ClipboardList, Download, Database, LogOut, ChevronLeft, ChevronRight, Settings, Upload
+  ClipboardList, Download, Database, LogOut, ChevronLeft, ChevronRight, Settings, Upload, Building2
 } from 'lucide-react';
 import { useState } from 'react';
 import { NavLink } from '@/components/NavLink';

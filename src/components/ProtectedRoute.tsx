@@ -11,6 +11,7 @@ const routePermissions: Record<string, keyof ReturnType<typeof getPermissions>> 
   '/exports': 'canExport',
   '/backup': 'canTriggerBackup',
   '/bulk-import': 'canBulkImport',
+  '/vslas': 'canManageVslas',
   '/settings': 'canManageRoles',
 };
 

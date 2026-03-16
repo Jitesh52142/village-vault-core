@@ -51,6 +51,7 @@ const App = () => (
               <Route path="/exports" element={<ExportsPage />} />
               <Route path="/backup" element={<BackupPage />} />
               <Route path="/bulk-import" element={<BulkImportPage />} />
+              <Route path="/vslas" element={<VslasPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
