@@ -9,9 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Pencil, Trash2, Search, Building2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Building2, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { VSLA } from '@/types';
+import type { VSLA, Country, Province, Community } from '@/types';
 
 interface VslaFormData {
   name: string;
@@ -31,6 +31,10 @@ export default function VslasPage() {
   const canManage = permissions?.canManageVslas ?? false;
 
   const [vslas, setVslas] = useState<VSLA[]>(mockVSLAs);
+  const [countries, setCountries] = useState<Country[]>(mockCountries);
+  const [provinces, setProvinces] = useState<Province[]>(mockProvinces);
+  const [communities, setCommunities] = useState<Community[]>(mockCommunities);
+
   const [search, setSearch] = useState('');
   const [countryFilter, setCountryFilter] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -40,31 +44,80 @@ export default function VslasPage() {
   const [form, setForm] = useState<VslaFormData>(emptyForm);
   const [errors, setErrors] = useState<string[]>([]);
 
+  // Inline "Add New" states
+  const [addingCountry, setAddingCountry] = useState(false);
+  const [newCountryName, setNewCountryName] = useState('');
+  const [newCurrencySymbol, setNewCurrencySymbol] = useState('');
+  const [newCurrencyCode, setNewCurrencyCode] = useState('');
+
+  const [addingProvince, setAddingProvince] = useState(false);
+  const [newProvinceName, setNewProvinceName] = useState('');
+
+  const [addingCommunity, setAddingCommunity] = useState(false);
+  const [newCommunityName, setNewCommunityName] = useState('');
+
   // Derived lookups
-  const getCommunity = (id: string) => mockCommunities.find(c => c.id === id);
-  const getProvince = (id: string) => mockProvinces.find(p => p.id === id);
-  const getCountryForCommunity = (communityId: string) => {
-    const community = getCommunity(communityId);
-    if (!community) return null;
-    const province = getProvince(community.provinceId);
-    if (!province) return null;
-    return mockCountries.find(c => c.id === province.countryId);
-  };
+  const getCommunity = (id: string) => communities.find(c => c.id === id);
+  const getProvince = (id: string) => provinces.find(p => p.id === id);
 
   // Filter VSLAs
   const filtered = vslas.filter(v => {
     const matchesSearch = v.name.toLowerCase().includes(search.toLowerCase()) || v.friendlyId.toLowerCase().includes(search.toLowerCase());
-    const matchesCountry = countryFilter === 'all' || v.countryName === mockCountries.find(c => c.id === countryFilter)?.name;
+    const matchesCountry = countryFilter === 'all' || v.countryName === countries.find(c => c.id === countryFilter)?.name;
     return matchesSearch && matchesCountry;
   });
 
-  // Get provinces filtered by selected country in form
-  const getProvincesForForm = () => {
-    const community = getCommunity(form.communityId);
-    return mockProvinces;
+  // Inline add handlers
+  const handleAddCountry = () => {
+    if (!newCountryName.trim() || !newCurrencySymbol.trim() || !newCurrencyCode.trim()) {
+      toast({ title: 'Missing fields', description: 'Country name, currency symbol, and currency code are all required.', variant: 'destructive' });
+      return;
+    }
+    const id = `c${Date.now()}`;
+    const newCountry: Country = {
+      id,
+      name: newCountryName.trim(),
+      currency: newCurrencyCode.trim().toUpperCase(),
+      currencySymbol: newCurrencySymbol.trim(),
+      currencyCode: newCurrencyCode.trim().toUpperCase(),
+      currencyDecimalPlaces: 0,
+    };
+    setCountries(prev => [...prev, newCountry]);
+    setForm(f => ({ ...f, countryId: id, provinceId: '', communityId: '' }));
+    setNewCountryName('');
+    setNewCurrencySymbol('');
+    setNewCurrencyCode('');
+    setAddingCountry(false);
+    toast({ title: 'Country Added', description: `${newCountry.name} has been added.` });
   };
 
-  const getCommunitiesForFilter = () => mockCommunities;
+  const handleAddProvince = () => {
+    if (!newProvinceName.trim()) {
+      toast({ title: 'Missing name', description: 'Province name is required.', variant: 'destructive' });
+      return;
+    }
+    const id = `p${Date.now()}`;
+    const newProv: Province = { id, name: newProvinceName.trim(), countryId: form.countryId };
+    setProvinces(prev => [...prev, newProv]);
+    setForm(f => ({ ...f, provinceId: id, communityId: '' }));
+    setNewProvinceName('');
+    setAddingProvince(false);
+    toast({ title: 'Province Added', description: `${newProv.name} has been added.` });
+  };
+
+  const handleAddCommunity = () => {
+    if (!newCommunityName.trim()) {
+      toast({ title: 'Missing name', description: 'Community name is required.', variant: 'destructive' });
+      return;
+    }
+    const id = `cm${Date.now()}`;
+    const newCom: Community = { id, name: newCommunityName.trim(), provinceId: form.provinceId };
+    setCommunities(prev => [...prev, newCom]);
+    setForm(f => ({ ...f, communityId: id }));
+    setNewCommunityName('');
+    setAddingCommunity(false);
+    toast({ title: 'Community Added', description: `${newCom.name} has been added.` });
+  };
 
   const validate = (): string[] => {
     const errs: string[] = [];
@@ -84,6 +137,9 @@ export default function VslasPage() {
     setEditingVsla(null);
     setForm(emptyForm);
     setErrors([]);
+    setAddingCountry(false);
+    setAddingProvince(false);
+    setAddingCommunity(false);
     setDialogOpen(true);
   };
 
@@ -91,7 +147,7 @@ export default function VslasPage() {
     setEditingVsla(vsla);
     const community = getCommunity(vsla.communityId);
     const province = community ? getProvince(community.provinceId) : null;
-    const country = province ? mockCountries.find(c => c.id === province.countryId) : null;
+    const country = province ? countries.find(c => c.id === province.countryId) : null;
     setForm({
       name: vsla.name,
       countryId: country?.id ?? '',
@@ -118,7 +174,7 @@ export default function VslasPage() {
 
     const community = getCommunity(form.communityId)!;
     const province = getProvince(community.provinceId)!;
-    const country = mockCountries.find(c => c.id === province.countryId)!;
+    const country = countries.find(c => c.id === province.countryId)!;
 
     if (editingVsla) {
       // Update
@@ -197,7 +253,7 @@ export default function VslasPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Countries</SelectItem>
-            {mockCountries.map(c => (
+            {countries.map(c => (
               <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
             ))}
           </SelectContent>
@@ -231,7 +287,7 @@ export default function VslasPage() {
               </TableRow>
             ) : (
               filtered.map(v => {
-                const country = mockCountries.find(c => c.name === v.countryName);
+                const country = countries.find(c => c.name === v.countryName);
                 const symbol = country?.currencySymbol ?? '$';
                 return (
                   <TableRow key={v.id} className="hover:bg-muted/30 transition-colors">
@@ -270,7 +326,7 @@ export default function VslasPage() {
           <DialogHeader>
             <DialogTitle>{editingVsla ? 'Edit VSLA' : 'Create New VSLA'}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto">
             {errors.length > 0 && (
               <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 space-y-1">
                 {errors.map((e, i) => (
@@ -278,49 +334,126 @@ export default function VslasPage() {
                 ))}
               </div>
             )}
+
+            {/* VSLA Name */}
             <div className="space-y-2">
               <Label htmlFor="vsla-name">VSLA Name *</Label>
               <Input id="vsla-name" placeholder="e.g. Umoja Women Group" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} maxLength={100} />
             </div>
+
+            {/* Country */}
             <div className="space-y-2">
-              <Label htmlFor="vsla-country">Country *</Label>
-              <Select value={form.countryId} onValueChange={v => setForm(f => ({ ...f, countryId: v, provinceId: '', communityId: '' }))}>
-                <SelectTrigger id="vsla-country">
-                  <SelectValue placeholder="Select country" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockCountries.map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.name} ({c.currencySymbol})</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="vsla-country">Country *</Label>
+                {!addingCountry && (
+                  <button type="button" onClick={() => setAddingCountry(true)} className="text-xs text-primary hover:underline flex items-center gap-1">
+                    <Plus className="h-3 w-3" /> Add New
+                  </button>
+                )}
+              </div>
+              {addingCountry ? (
+                <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+                  <Input placeholder="Country name" value={newCountryName} onChange={e => setNewCountryName(e.target.value)} maxLength={60} />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input placeholder="Currency symbol (e.g. FRw)" value={newCurrencySymbol} onChange={e => setNewCurrencySymbol(e.target.value)} maxLength={10} />
+                    <Input placeholder="Currency code (e.g. RWF)" value={newCurrencyCode} onChange={e => setNewCurrencyCode(e.target.value)} maxLength={5} />
+                  </div>
+                  <div className="flex items-center gap-2 justify-end">
+                    <Button variant="ghost" size="sm" onClick={() => { setAddingCountry(false); setNewCountryName(''); setNewCurrencySymbol(''); setNewCurrencyCode(''); }}>
+                      <X className="h-3.5 w-3.5 mr-1" /> Cancel
+                    </Button>
+                    <Button size="sm" onClick={handleAddCountry}>
+                      <Check className="h-3.5 w-3.5 mr-1" /> Save
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Select value={form.countryId} onValueChange={v => setForm(f => ({ ...f, countryId: v, provinceId: '', communityId: '' }))}>
+                  <SelectTrigger id="vsla-country">
+                    <SelectValue placeholder="Select country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {countries.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name} ({c.currencySymbol})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
+
+            {/* Province */}
             <div className="space-y-2">
-              <Label htmlFor="vsla-province">Province *</Label>
-              <Select value={form.provinceId} onValueChange={v => setForm(f => ({ ...f, provinceId: v, communityId: '' }))} disabled={!form.countryId}>
-                <SelectTrigger id="vsla-province">
-                  <SelectValue placeholder={form.countryId ? 'Select province' : 'Select country first'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockProvinces.filter(p => p.countryId === form.countryId).map(p => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="vsla-province">Province *</Label>
+                {!addingProvince && form.countryId && (
+                  <button type="button" onClick={() => setAddingProvince(true)} className="text-xs text-primary hover:underline flex items-center gap-1">
+                    <Plus className="h-3 w-3" /> Add New
+                  </button>
+                )}
+              </div>
+              {addingProvince ? (
+                <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+                  <Input placeholder="Province name" value={newProvinceName} onChange={e => setNewProvinceName(e.target.value)} maxLength={60} />
+                  <div className="flex items-center gap-2 justify-end">
+                    <Button variant="ghost" size="sm" onClick={() => { setAddingProvince(false); setNewProvinceName(''); }}>
+                      <X className="h-3.5 w-3.5 mr-1" /> Cancel
+                    </Button>
+                    <Button size="sm" onClick={handleAddProvince}>
+                      <Check className="h-3.5 w-3.5 mr-1" /> Save
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Select value={form.provinceId} onValueChange={v => setForm(f => ({ ...f, provinceId: v, communityId: '' }))} disabled={!form.countryId}>
+                  <SelectTrigger id="vsla-province">
+                    <SelectValue placeholder={form.countryId ? 'Select province' : 'Select country first'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {provinces.filter(p => p.countryId === form.countryId).map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
+
+            {/* Community */}
             <div className="space-y-2">
-              <Label htmlFor="vsla-community">Community *</Label>
-              <Select value={form.communityId} onValueChange={v => setForm(f => ({ ...f, communityId: v }))} disabled={!form.provinceId}>
-                <SelectTrigger id="vsla-community">
-                  <SelectValue placeholder={form.provinceId ? 'Select community' : 'Select province first'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockCommunities.filter(cm => cm.provinceId === form.provinceId).map(cm => (
-                    <SelectItem key={cm.id} value={cm.id}>{cm.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="vsla-community">Community *</Label>
+                {!addingCommunity && form.provinceId && (
+                  <button type="button" onClick={() => setAddingCommunity(true)} className="text-xs text-primary hover:underline flex items-center gap-1">
+                    <Plus className="h-3 w-3" /> Add New
+                  </button>
+                )}
+              </div>
+              {addingCommunity ? (
+                <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+                  <Input placeholder="Community name" value={newCommunityName} onChange={e => setNewCommunityName(e.target.value)} maxLength={60} />
+                  <div className="flex items-center gap-2 justify-end">
+                    <Button variant="ghost" size="sm" onClick={() => { setAddingCommunity(false); setNewCommunityName(''); }}>
+                      <X className="h-3.5 w-3.5 mr-1" /> Cancel
+                    </Button>
+                    <Button size="sm" onClick={handleAddCommunity}>
+                      <Check className="h-3.5 w-3.5 mr-1" /> Save
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Select value={form.communityId} onValueChange={v => setForm(f => ({ ...f, communityId: v }))} disabled={!form.provinceId}>
+                  <SelectTrigger id="vsla-community">
+                    <SelectValue placeholder={form.provinceId ? 'Select community' : 'Select province first'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {communities.filter(cm => cm.provinceId === form.provinceId).map(cm => (
+                      <SelectItem key={cm.id} value={cm.id}>{cm.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
+
+            {/* Coordinates */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="vsla-lat">Latitude</Label>
