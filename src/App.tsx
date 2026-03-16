@@ -21,6 +21,7 @@ import ExportsPage from "@/pages/ExportsPage";
 import BackupPage from "@/pages/BackupPage";
 import SettingsPage from "@/pages/SettingsPage";
 import BulkImportPage from "@/pages/BulkImportPage";
+import VslasPage from "@/pages/VslasPage";
 import UnauthorizedPage from "@/pages/UnauthorizedPage";
 import NotFound from "@/pages/NotFound";
 
