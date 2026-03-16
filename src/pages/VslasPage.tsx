@@ -137,6 +137,9 @@ export default function VslasPage() {
     setEditingVsla(null);
     setForm(emptyForm);
     setErrors([]);
+    setAddingCountry(false);
+    setAddingProvince(false);
+    setAddingCommunity(false);
     setDialogOpen(true);
   };
 
