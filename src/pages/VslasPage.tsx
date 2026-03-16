@@ -282,21 +282,41 @@ export default function VslasPage() {
               <Input id="vsla-name" placeholder="e.g. Umoja Women Group" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} maxLength={100} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="vsla-community">Community *</Label>
-              <Select value={form.communityId} onValueChange={v => setForm(f => ({ ...f, communityId: v }))}>
-                <SelectTrigger id="vsla-community">
-                  <SelectValue placeholder="Select community" />
+              <Label htmlFor="vsla-country">Country *</Label>
+              <Select value={form.countryId} onValueChange={v => setForm(f => ({ ...f, countryId: v, provinceId: '', communityId: '' }))}>
+                <SelectTrigger id="vsla-country">
+                  <SelectValue placeholder="Select country" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockCommunities.map(cm => {
-                    const prov = getProvince(cm.provinceId);
-                    const country = prov ? mockCountries.find(c => c.id === prov.countryId) : null;
-                    return (
-                      <SelectItem key={cm.id} value={cm.id}>
-                        {cm.name} — {prov?.name}, {country?.name}
-                      </SelectItem>
-                    );
-                  })}
+                  {mockCountries.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name} ({c.currencySymbol})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="vsla-province">Province *</Label>
+              <Select value={form.provinceId} onValueChange={v => setForm(f => ({ ...f, provinceId: v, communityId: '' }))} disabled={!form.countryId}>
+                <SelectTrigger id="vsla-province">
+                  <SelectValue placeholder={form.countryId ? 'Select province' : 'Select country first'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {mockProvinces.filter(p => p.countryId === form.countryId).map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="vsla-community">Community *</Label>
+              <Select value={form.communityId} onValueChange={v => setForm(f => ({ ...f, communityId: v }))} disabled={!form.provinceId}>
+                <SelectTrigger id="vsla-community">
+                  <SelectValue placeholder={form.provinceId ? 'Select community' : 'Select province first'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {mockCommunities.filter(cm => cm.provinceId === form.provinceId).map(cm => (
+                    <SelectItem key={cm.id} value={cm.id}>{cm.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
