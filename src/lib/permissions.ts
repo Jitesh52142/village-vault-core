@@ -58,6 +58,7 @@ const permissionsByRole: Record<UserRole, Permission> = {
     canViewAudit: true,
     canViewReports: true,
     canViewRiskFlags: true,
+    canManageVslas: true,
     canExport: true,
     canTriggerBackup: true,
     canBulkImport: true,
