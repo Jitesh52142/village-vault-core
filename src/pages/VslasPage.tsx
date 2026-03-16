@@ -88,8 +88,13 @@ export default function VslasPage() {
 
   const openEdit = (vsla: VSLA) => {
     setEditingVsla(vsla);
+    const community = getCommunity(vsla.communityId);
+    const province = community ? getProvince(community.provinceId) : null;
+    const country = province ? mockCountries.find(c => c.id === province.countryId) : null;
     setForm({
       name: vsla.name,
+      countryId: country?.id ?? '',
+      provinceId: province?.id ?? '',
       communityId: vsla.communityId,
       lat: vsla.lat?.toString() ?? '',
       lng: vsla.lng?.toString() ?? '',
