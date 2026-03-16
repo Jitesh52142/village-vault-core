@@ -18,6 +18,7 @@ interface NavItem {
 
 const allNavItems: NavItem[] = [
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
+  { title: 'VSLAs', url: '/vslas', icon: Building2, permissionKey: 'canManageVslas' },
   { title: 'Members', url: '/members', icon: Users },
   { title: 'Loans', url: '/loans', icon: CreditCard },
   { title: 'Repayments', url: '/repayments', icon: Receipt, permissionKey: 'canRecordRepayment' },
