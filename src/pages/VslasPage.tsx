@@ -171,7 +171,7 @@ export default function VslasPage() {
 
     const community = getCommunity(form.communityId)!;
     const province = getProvince(community.provinceId)!;
-    const country = mockCountries.find(c => c.id === province.countryId)!;
+    const country = countries.find(c => c.id === province.countryId)!;
 
     if (editingVsla) {
       // Update
