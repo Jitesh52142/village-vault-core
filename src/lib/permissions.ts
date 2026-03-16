@@ -28,6 +28,9 @@ export interface Permission {
   canViewReports: boolean;
   canViewRiskFlags: boolean;
 
+  // VSLA Management
+  canManageVslas: boolean;
+
   // System
   canExport: boolean;
   canTriggerBackup: boolean;
@@ -55,6 +58,7 @@ const permissionsByRole: Record<UserRole, Permission> = {
     canViewAudit: true,
     canViewReports: true,
     canViewRiskFlags: true,
+    canManageVslas: true,
     canExport: true,
     canTriggerBackup: true,
     canBulkImport: true,
@@ -77,6 +81,7 @@ const permissionsByRole: Record<UserRole, Permission> = {
     canViewAudit: true,
     canViewReports: true,
     canViewRiskFlags: true,
+    canManageVslas: true,
     canExport: true,
     canTriggerBackup: false,
     canBulkImport: true,
@@ -99,6 +104,7 @@ const permissionsByRole: Record<UserRole, Permission> = {
     canViewAudit: false,
     canViewReports: true,
     canViewRiskFlags: true,
+    canManageVslas: false,
     canExport: false,
     canTriggerBackup: false,
     canBulkImport: false,
@@ -121,6 +127,7 @@ const permissionsByRole: Record<UserRole, Permission> = {
     canViewAudit: false,
     canViewReports: false,
     canViewRiskFlags: false,
+    canManageVslas: false,
     canExport: false,
     canTriggerBackup: false,
     canBulkImport: false,
@@ -143,6 +150,7 @@ const permissionsByRole: Record<UserRole, Permission> = {
     canViewAudit: true,
     canViewReports: true,
     canViewRiskFlags: true,
+    canManageVslas: false,
     canExport: true,
     canTriggerBackup: false,
     canBulkImport: false,

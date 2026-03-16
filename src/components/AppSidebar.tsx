@@ -4,7 +4,7 @@ import { getPermissions } from '@/lib/permissions';
 import { ROLE_LABELS } from '@/types';
 import {
   LayoutDashboard, Users, CreditCard, Receipt, MapPin, FileText, ShieldAlert,
-  ClipboardList, Download, Database, LogOut, ChevronLeft, ChevronRight, Settings, Upload
+  ClipboardList, Download, Database, LogOut, ChevronLeft, ChevronRight, Settings, Upload, Building2
 } from 'lucide-react';
 import { useState } from 'react';
 import { NavLink } from '@/components/NavLink';
@@ -18,6 +18,7 @@ interface NavItem {
 
 const allNavItems: NavItem[] = [
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
+  { title: 'VSLAs', url: '/vslas', icon: Building2, permissionKey: 'canManageVslas' },
   { title: 'Members', url: '/members', icon: Users },
   { title: 'Loans', url: '/loans', icon: CreditCard },
   { title: 'Repayments', url: '/repayments', icon: Receipt, permissionKey: 'canRecordRepayment' },
